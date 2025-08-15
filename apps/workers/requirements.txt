@@ -1,0 +1,2 @@
+celery==5.4.0\nredis==5.0.8\nsqlalchemy==2.0.35\npsycopg[binary]==3.2.1\nrequests==2.32.3\ntwilio==9.3.6\nprometheus-client==0.21.0\nyt-dlp==2024.8.6\nselenium==4.23.1\nwebdriver-manager==4.0.2\nultralytics==8.3.12\ntorch==2.3.1\ntorchvision==0.18.1\nopen_clip_torch==2.26.1\nfaiss-cpu==1.8.0.post1\nPillow==10.4.0\n
+ImageHash==4.3.1

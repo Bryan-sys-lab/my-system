@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - feature/**
+      - fix/**
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bsearch
+          POSTGRES_PASSWORD: bsearchpassword
+          POSTGRES_DB: bsearch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bsearch" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      POSTGRES_USER: bsearch
+      POSTGRES_PASSWORD: bsearchpassword
+      POSTGRES_DB: bsearch
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      DATABASE_URL: postgresql+psycopg://bsearch:bsearchpassword@localhost:5432/bsearch
+      REDIS_URL: redis://localhost:6379/0
+      TEST_MODE: true
+      WATCHER_TICK_SECONDS: 3600
+      CELERY_CONCURRENCY: 1
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ENDPOINT: minio:9000
+      MINIO_BUCKET: bsearch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev ffmpeg tesseract-ocr
+      - name: Install pip-tools and coverage tools
+        run: pip install pip-tools pytest-cov
+      - name: Compile requirements
+        run: |
+          cd server
+          pip-compile requirements.in
+      - name: Install dependencies
+        run: |
+          cd server
+          pip install -r requirements.txt
+      - name: Run tests with coverage and full logging
+        run: |
+          cd server
+          pytest --cov=. --cov-report=xml --cov-report=term-missing tests/ --maxfail=3 -o log_cli_level=INFO -o log_cli=true --capture=tee-sys
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: server/coverage.xml

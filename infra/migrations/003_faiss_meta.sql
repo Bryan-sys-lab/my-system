@@ -1,0 +1,3 @@
+-- Ensure /data/faiss and /data/faiss/images_meta.json are created by the app, but for Render, document that the /data disk is mounted for all services.
+-- No DB changes needed, but this file documents the disk usage for Render deploys.
+-- See render.yaml for disk mount details.

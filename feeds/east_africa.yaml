@@ -1,0 +1,42 @@
+title: Kenya & East Africa Feeds
+sources:
+- name: The Standard - Headlines
+  type: rss
+  url: https://www.standardmedia.co.ke/rss/headlines.php
+  region: KE
+- name: The Standard - Kenya
+  type: rss
+  url: https://www.standardmedia.co.ke/rss/kenya.php
+  region: KE
+- name: Capital FM Kenya - News
+  type: rss
+  url: https://www.capitalfm.co.ke/news/feed
+  region: KE
+- name: AllAfrica - Kenya (general)
+  type: rss
+  url: https://allafrica.com/tools/headlines/rdf/kenya/headlines.rdf
+  region: KE
+- name: Africa Intelligence (general)
+  type: rss
+  url: https://www.africaintelligence.com/info/rss
+  region: EA
+- name: Kenyamoja - News (RSS view)
+  type: rss
+  url: https://www.kenyamoja.com/news?feed=rss
+  region: KE
+- name: The EastAfrican (front page as web)
+  type: web
+  url: https://www.theeastafrican.co.ke/
+  region: EA
+- name: The Star Kenya (front page as web)
+  type: web
+  url: https://www.the-star.co.ke/
+  region: KE
+- name: EU TED Notices (for KE vendors)
+  type: rss
+  url: https://ted.europa.eu/en/simap/rss-feed
+  region: EU
+- name: Reddit r/Kenya (JSON)
+  type: reddit
+  url: https://www.reddit.com/r/Kenya/.json
+  region: KE

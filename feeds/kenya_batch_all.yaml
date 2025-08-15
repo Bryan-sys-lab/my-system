@@ -1,0 +1,38 @@
+
+title: "Kenya All Collectors Batch"
+project: "<put-project-uuid-here>"
+rss:
+  - "feeds/east_africa.yaml"
+twitter_handles:
+  - "@Kenyans"
+  - "@StandardKenya"
+  - "@KenyaNewsAgency"
+facebook_pages:
+  - "Kenyans.co.ke"
+  - "KTNNewsKenya"
+instagram_ids:
+  - "17841400008460000"  # example IG business ID
+telegram_chats:
+  - "-1001234567890"     # example chat/channel id your bot has access to
+discord_channels:
+  - "123456789012345678" # example channel id
+mastodon_instances:
+  - "https://mastodon.social"
+bluesky_handles:
+  - "kenyans.bsky.social"
+tiktok_users:
+  - "kenyans"
+reddit_subreddits:
+  - "Kenya"
+deepweb:
+  seeds:
+    - "https://www.kenya.go.ke/"
+    - "https://nation.africa/"
+  allow_domains:
+    - "www.kenya.go.ke"
+    - "nation.africa"
+  max_pages: 120
+onion:
+  allow_onion: false
+  seeds: []
+  max_pages: 25

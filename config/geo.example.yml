@@ -1,0 +1,45 @@
+# Copy to geo.yml and fill in your real keys/paths.
+ip_geo:
+  maxmind_mmdb_path: "/data/GeoLite2-City.mmdb"   # mount the mmdb file into the container/host
+  enabled: true
+
+geocoders:
+  enabled: true
+  prefer_order: ["nominatim", "mapbox", "google"]
+  nominatim:
+    base_url: "https://nominatim.openstreetmap.org/search"
+    email: "you@example.com"          # per Nominatim policy (set a real contact)
+    user_agent: "b-search-geo/1.0"
+    rate_limit_per_sec: 1
+  mapbox:
+    token: "MAPBOX_TOKEN"
+  google:
+    api_key: "GOOGLE_MAPS_API_KEY"
+  cache_ttl_sec: 86400
+
+wifi_cell:
+  enabled: true
+  prefer_order: ["google", "mls"]
+  google:
+    api_key: "GOOGLE_GEOLOCATION_API_KEY"
+  mls:
+    base_url: "https://location.services.mozilla.com/v1/geolocate"
+    api_key: "MLS_API_KEY"  # optional; MLS may require token
+  cache_ttl_sec: 86400
+
+redis:
+  url: "redis://redis:6379/0"
+
+storage:
+  postgis_dsn: "postgresql://postgres:postgres@postgres:5432/geo"
+  h3_resolution: 9
+
+
+landmarks:
+  enabled: false
+  index_dir: "/data/landmarks_index"   # must contain index.faiss and meta.jsonl
+  threshold: 0.25
+
+video:
+  frame_every_sec: 2
+  frame_limit: 8

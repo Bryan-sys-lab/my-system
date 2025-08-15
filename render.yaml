@@ -1,0 +1,146 @@
+services:
+  - type: web
+    name: bsearch-api
+    env: python
+    plan: free
+    buildCommand: |
+      pip install pip-tools
+      pip-compile requirements.in
+      pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8080
+    envVars:
+      - key: TEST_MODE
+        value: true
+      - key: WATCHER_TICK_SECONDS
+        value: 3600
+      - key: CELERY_CONCURRENCY
+        value: 1
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bsearch-redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromService:
+          type: postgres
+          name: bsearch-db
+          property: connectionString
+    buildFilter:
+      paths:
+        - apps/api/
+    build:
+      dockerfilePath: apps/api/Dockerfile
+    preDeploy:
+      - pip install -r requirements.txt
+      - python scripts/env_sync.py
+      - bash scripts/healthcheck.sh
+    autoDeploy: true
+    healthCheckPath: /healthz
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: worker
+    name: bsearch-celery
+    env: python
+    plan: free
+    buildCommand: |
+      pip install pip-tools
+      pip-compile requirements.in
+      pip install -r requirements.txt
+    startCommand: celery -A tasks.celery_app worker -l INFO
+    envVars:
+      - key: TEST_MODE
+        value: true
+      - key: WATCHER_TICK_SECONDS
+        value: 3600
+      - key: CELERY_CONCURRENCY
+        value: 1
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bsearch-redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromService:
+          type: postgres
+          name: bsearch-db
+          property: connectionString
+    buildFilter:
+      paths:
+        - apps/workers/
+    build:
+      dockerfilePath: apps/workers/Dockerfile
+    preDeploy:
+      - pip install -r requirements.txt
+      - python scripts/env_sync.py
+      - bash scripts/healthcheck.sh
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: cron
+    name: bsearch-scheduler
+    env: python
+    plan: free
+    schedule: "0 * * * *"
+    buildCommand: |
+      pip install pip-tools
+      pip-compile requirements.in
+      pip install -r requirements.txt
+    startCommand: python scheduler.py
+    envVars:
+      - key: TEST_MODE
+        value: true
+      - key: WATCHER_TICK_SECONDS
+        value: 3600
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: bsearch-redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromService:
+          type: postgres
+          name: bsearch-db
+          property: connectionString
+    buildFilter:
+      paths:
+        - apps/workers/
+    build:
+      dockerfilePath: apps/workers/Dockerfile
+    preDeploy:
+      - pip install -r requirements.txt
+      - python scripts/env_sync.py
+      - bash scripts/healthcheck.sh
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+
+  - type: redis
+    name: bsearch-redis
+    plan: free
+
+  - type: postgres
+    name: bsearch-db
+    plan: free
+    databases:
+      - name: bsearch
+    user: bsearch
+    password: bsearchpassword
+    envVars:
+      - key: POSTGRES_DB
+        value: bsearch
+      - key: POSTGRES_USER
+        value: bsearch
+      - key: POSTGRES_PASSWORD
+        value: bsearchpassword
+    disk:
+      name: pgdata
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1

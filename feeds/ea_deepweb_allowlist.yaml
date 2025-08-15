@@ -1,0 +1,104 @@
+title: Kenya & East Africa Deep-Web Allowlist
+description: Seeds + allowlisted domains for polite deep-web crawling of public-interest
+  sources in Kenya & East Africa. Edit freely.
+version: 1.0.0
+seeds:
+- https://www.kenya.go.ke/
+- https://www.mygov.go.ke/
+- https://www.treasury.go.ke/
+- https://www.parliament.go.ke/
+- https://www.kra.go.ke/
+- https://www.ecitizen.go.ke/
+- https://www.immigration.go.ke/
+- https://www.judiciary.go.ke/
+- https://www.odpp.go.ke/
+- https://www.health.go.ke/
+- https://www.education.go.ke/
+- https://www.interior.go.ke/
+- https://www.nps.go.ke/
+- https://www.ca.go.ke/
+- https://www.knbs.or.ke/
+- https://www.ppra.go.ke/
+- https://www.tenders.go.ke/
+- https://nairobi.go.ke/
+- https://mombasa.go.ke/
+- https://www.kisumu.go.ke/
+- https://nakuru.go.ke/
+- https://kiambu.go.ke/
+- https://nation.africa/
+- https://www.standardmedia.co.ke/
+- https://www.the-star.co.ke/
+- https://citizen.digital/
+- https://www.kbc.co.ke/
+- https://www.businessdailyafrica.com/
+- https://www.peopleDaily.co.ke/
+- https://www.kenyans.co.ke/
+- https://www.pulselive.co.ke/
+- https://www.kenyamoja.com/
+- https://www.theeastafrican.co.ke/
+- https://www.monitor.co.ug/
+- https://www.thecitizen.co.tz/
+- https://www.newtimes.co.rw/
+- https://www.wazua.co.ke/
+- https://www.skyscrapercity.com/
+- https://kenyaplex.com/
+- https://mwakilishi.com/
+allow_domains:
+- www.kenya.go.ke
+- www.mygov.go.ke
+- www.treasury.go.ke
+- www.parliament.go.ke
+- www.kra.go.ke
+- www.ecitizen.go.ke
+- www.immigration.go.ke
+- www.judiciary.go.ke
+- www.odpp.go.ke
+- www.health.go.ke
+- www.education.go.ke
+- www.interior.go.ke
+- www.nps.go.ke
+- www.ca.go.ke
+- www.knbs.or.ke
+- www.ppra.go.ke
+- www.tenders.go.ke
+- nairobi.go.ke
+- mombasa.go.ke
+- www.kisumu.go.ke
+- nakuru.go.ke
+- kiambu.go.ke
+- nation.africa
+- www.standardmedia.co.ke
+- www.the-star.co.ke
+- citizen.digital
+- www.kbc.co.ke
+- www.businessdailyafrica.com
+- www.peopledaily.co.ke
+- www.kenyans.co.ke
+- www.pulselive.co.ke
+- www.kenyamoja.com
+- www.theeastafrican.co.ke
+- www.monitor.co.ug
+- www.thecitizen.co.tz
+- www.newtimes.co.rw
+- www.wazua.co.ke
+- www.skyscrapercity.com
+- kenyaplex.com
+- mwakilishi.com
+deny_patterns:
+- logout
+- signout
+- wp-login
+- cart
+- checkout
+- privacy-policy
+- terms
+- \?replytocom=
+- \.pdf$
+- \.zip$
+- \.jpg$
+- \.png$
+- \.gif$
+crawl:
+  max_pages: 300
+  per_domain_delay: 1.2
+  user_agent: b-search/1.0 (+polite crawler)

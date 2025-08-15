@@ -1,0 +1,18 @@
+
+# managed with pip-tools (compile to requirements.txt when building)
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+sqlalchemy==2.0.35
+psycopg[binary]==3.2.1
+requests==2.32.3
+beautifulsoup4==4.12.3
+feedparser==6.0.11
+pytesseract==0.3.13
+Pillow==10.4.0
+spacy==3.7.5
+whisper==1.1.10
+twilio==9.3.6
+prometheus-client==0.21.0
+minio==7.2.9
+celery==5.4.0
+redis==5.0.8

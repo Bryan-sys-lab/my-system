@@ -1,0 +1,2 @@
+fastapi==0.115.0\nuvicorn[standard]==0.30.6\nsqlalchemy==2.0.35\npsycopg[binary]==3.2.1\nrequests==2.32.3\nbeautifulsoup4==4.12.3\nfeedparser==6.0.11\npytesseract==0.3.13\nPillow==10.4.0\nspacy==3.7.5\nwhisper==1.1.10\ntwilio==9.3.6\nprometheus-client==0.21.0\nminio==7.2.9\nyt-dlp==2024.8.6\nrequests[socks]==2.32.3\nselenium==4.23.1\nwebdriver-manager==4.0.2\nultralytics==8.3.12\ntorch==2.3.1\ntorchvision==0.18.1\nopen_clip_torch==2.26.1\nfaiss-cpu==1.8.0.post1\n
+ImageHash==4.3.1

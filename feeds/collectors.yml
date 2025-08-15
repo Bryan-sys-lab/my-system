@@ -1,0 +1,193 @@
+collectors:
+  - name: collector_1
+    enabled: true
+    frequency: 3600
+  - name: collector_2
+    enabled: true
+    frequency: 3600
+  - name: collector_3
+    enabled: true
+    frequency: 3600
+  - name: collector_4
+    enabled: true
+    frequency: 3600
+  - name: collector_5
+    enabled: true
+    frequency: 3600
+  - name: collector_6
+    enabled: true
+    frequency: 3600
+  - name: collector_7
+    enabled: true
+    frequency: 3600
+  - name: collector_8
+    enabled: true
+    frequency: 3600
+  - name: collector_9
+    enabled: true
+    frequency: 3600
+  - name: collector_10
+    enabled: true
+    frequency: 3600
+  - name: collector_11
+    enabled: true
+    frequency: 3600
+  - name: collector_12
+    enabled: true
+    frequency: 3600
+  - name: collector_13
+    enabled: true
+    frequency: 3600
+  - name: collector_14
+    enabled: true
+    frequency: 3600
+  - name: collector_15
+    enabled: true
+    frequency: 3600
+  - name: collector_16
+    enabled: true
+    frequency: 3600
+  - name: collector_17
+    enabled: true
+    frequency: 3600
+  - name: collector_18
+    enabled: true
+    frequency: 3600
+  - name: collector_19
+    enabled: true
+    frequency: 3600
+  - name: collector_20
+    enabled: true
+    frequency: 3600
+  - name: collector_21
+    enabled: true
+    frequency: 3600
+  - name: collector_22
+    enabled: true
+    frequency: 3600
+  - name: collector_23
+    enabled: true
+    frequency: 3600
+  - name: collector_24
+    enabled: true
+    frequency: 3600
+  - name: collector_25
+    enabled: true
+    frequency: 3600
+  - name: collector_26
+    enabled: true
+    frequency: 3600
+  - name: collector_27
+    enabled: true
+    frequency: 3600
+  - name: collector_28
+    enabled: true
+    frequency: 3600
+  - name: collector_29
+    enabled: true
+    frequency: 3600
+  - name: collector_30
+    enabled: true
+    frequency: 3600
+  - name: collector_31
+    enabled: true
+    frequency: 3600
+  - name: collector_32
+    enabled: true
+    frequency: 3600
+  - name: collector_33
+    enabled: true
+    frequency: 3600
+  - name: collector_34
+    enabled: true
+    frequency: 3600
+  - name: collector_35
+    enabled: true
+    frequency: 3600
+  - name: collector_36
+    enabled: true
+    frequency: 3600
+  - name: collector_37
+    enabled: true
+    frequency: 3600
+  - name: collector_38
+    enabled: true
+    frequency: 3600
+  - name: collector_39
+    enabled: true
+    frequency: 3600
+  - name: collector_40
+    enabled: true
+    frequency: 3600
+  - name: collector_41
+    enabled: true
+    frequency: 3600
+  - name: collector_42
+    enabled: true
+    frequency: 3600
+  - name: collector_43
+    enabled: true
+    frequency: 3600
+  - name: collector_44
+    enabled: true
+    frequency: 3600
+  - name: collector_45
+    enabled: true
+    frequency: 3600
+  - name: collector_46
+    enabled: true
+    frequency: 3600
+  - name: collector_47
+    enabled: true
+    frequency: 3600
+  - name: collector_48
+    enabled: true
+    frequency: 3600
+  - name: collector_49
+    enabled: true
+    frequency: 3600
+  - name: collector_50
+    enabled: true
+    frequency: 3600
+  - name: collector_51
+    enabled: true
+    frequency: 3600
+  - name: collector_52
+    enabled: true
+    frequency: 3600
+  - name: collector_53
+    enabled: true
+    frequency: 3600
+  - name: collector_54
+    enabled: true
+    frequency: 3600
+  - name: collector_55
+    enabled: true
+    frequency: 3600
+  - name: collector_56
+    enabled: true
+    frequency: 3600
+  - name: collector_57
+    enabled: true
+    frequency: 3600
+  - name: collector_58
+    enabled: true
+    frequency: 3600
+  - name: collector_59
+    enabled: true
+    frequency: 3600
+  - name: collector_60
+    enabled: true
+    frequency: 3600
+  - name: collector_61
+    enabled: true
+    frequency: 3600
+  - name: collector_62
+    enabled: true
+    frequency: 3600
+  - name: collector_63
+    enabled: true
+    frequency: 3600
+  - name: collector_64
+    enabled: true
+    frequency: 3600

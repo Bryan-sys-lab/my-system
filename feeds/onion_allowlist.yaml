@@ -1,0 +1,8 @@
+title: Onion Allowlist (Opt-in)
+description: Explicit list of .onion seeds to crawl via Tor. Edit to add your own,
+  and call /crawl/onion with allow_onion=true.
+version: 1.0.0
+seeds: []
+notes:
+- Add only lawful, permitted .onion sites you control or are allowed to crawl.
+- Ensure your Tor proxy is running and TOR_SOCKS_PROXY is set.
