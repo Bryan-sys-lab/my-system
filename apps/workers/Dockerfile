@@ -8,4 +8,5 @@ RUN chmod +x /entrypoint.sh
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["celery", "-A", "tasks.celery_app", "worker", "-l", "INFO"]
+# Use the full module path used by render.yaml and the code
+CMD ["celery", "-A", "apps.workers.tasks", "worker", "--loglevel=info"]

@@ -1,2 +1,33 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+eggs/
+.eggs/
+*.egg-info/
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+env/
+
+# Pytest
+.pytest_cache/
+
+# Editor configs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+
+# Env files
+.env
+.env.*
 .env.example
 .env
