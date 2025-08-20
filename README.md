@@ -1,6 +1,6 @@
 # b-search (Consolidated Modular System)
 
-A production-grade, modular OSINT + data collection and enrichment platform that merges the best ideas from your prior files. Highlights:
+A production-grade, modular OSINT + data collection and enrichment 
 
 - **Collectors**: headless browser (Selenium), RSS, site-specific, social (generic), files, images & video.
 - **Live Search Pipelines**: FastAPI + Celery workers with Redis broker for async scraping & enrichment.
