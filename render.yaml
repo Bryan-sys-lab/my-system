@@ -1,41 +1,71 @@
 services:
+  # 🌐 Web Service
   - type: web
-    name: api
+    name: my-system-web
     env: python
-    plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: ./migrate.sh && uvicorn apps.api.main:app --host 0.0.0.0 --port 10000
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "./migrate.sh && uvicorn apps.api.main:app --host 0.0.0.0 --port 10000"
     envVars:
       - key: DATABASE_URL
-        value: ""
+        fromDatabase:
+          name: my-system-db
+          property: connectionString
       - key: REDIS_URL
-        value: ""
-    healthCheck:
-      path: /healthz
-      port: 10000
-      intervalSeconds: 10
-      timeoutSeconds: 5
+        fromService:
+          name: my-system-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
 
+  # 🧵 Celery Worker
   - type: worker
-    name: worker
+    name: my-system-worker
     env: python
-    plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A apps.workers.tasks worker --loglevel=info
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A apps.workers.tasks worker --loglevel=info"
     envVars:
       - key: DATABASE_URL
-        value: ""
+        fromDatabase:
+          name: my-system-db
+          property: connectionString
       - key: REDIS_URL
-        value: ""
+        fromService:
+          name: my-system-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        sync: true
 
+  # ⏰ Celery Beat Scheduler
   - type: worker
-    name: beat
+    name: my-system-beat
     env: python
-    plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A apps.workers.tasks beat --loglevel=info
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A apps.workers.tasks beat --loglevel=info"
     envVars:
       - key: DATABASE_URL
-        value: ""
+        fromDatabase:
+          name: my-system-db
+          property: connectionString
       - key: REDIS_URL
-        value: ""
+        fromService:
+          name: my-system-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        sync: true
+
+databases:
+  - name: my-system-db
+    plan: free
+
+services:
+  - type: redis
+    name: my-system-redis
+    plan: free
