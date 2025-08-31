@@ -1,15 +1,17 @@
 from typing import List, Dict
 import torch
 import numpy as np
-import open_clip
 from PIL import Image
+
+from .open_clip_adapter import create_model_and_transforms, get_tokenizer
 
 def _device():
     return "cuda" if torch.cuda.is_available() else "cpu"
 
 def build_clip(model_name: str = "ViT-B-32", pretrained: str = "openai"):
-    model, _, preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrained, device=_device())
-    tokenizer = open_clip.get_tokenizer(model_name)
+    model, preprocess, tokenizer = create_model_and_transforms(model_name, pretrained=pretrained)
+    if tokenizer is None:
+        tokenizer = get_tokenizer(model_name)
     return model, preprocess, tokenizer
 
 def embed_images(image_paths: List[str], model_name: str = "ViT-B-32", pretrained: str = "openai"):

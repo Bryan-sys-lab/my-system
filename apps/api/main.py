@@ -1,4 +1,7 @@
 from fastapi import FastAPI, HTTPException, Body
+from fastapi import Depends
+from fastapi.responses import StreamingResponse
+import json as _json
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import PlainTextResponse
 from libs.collectors.web_simple import fetch_url
@@ -7,9 +10,12 @@ from libs.enrichment.nlp import extract_entities
 from libs.crypto.btc import address_txs
 from libs.storage.db import SessionLocal
 from libs.storage.models import Project, Source, Item, Alert
+from libs.storage.db import init_db
 from sqlalchemy import select
 import uuid
 import os, io, json, hashlib
+import logging
+from libs.auth import require_run_all_auth
 from fastapi import UploadFile, File
 from libs.enrichment.hash_index import build_hash_meta, hamming, phash_file, sha256_file
 import faiss
@@ -53,6 +59,22 @@ app = FastAPI(title="b-search API", version="1.0.0")
 
 REQS = Counter("api_requests_total", "Total API requests", ["endpoint"])
 HEALTH = Gauge("app_health", "Health status")
+RUN_ALL_REQS = Counter("api_run_all_requests_total", "Total run_all requests")
+RUN_ALL_COLLECTOR_SUCCESS = Counter("api_run_all_collector_success_total", "Per-collector successes", ["module"]) 
+RUN_ALL_COLLECTOR_FAILURE = Counter("api_run_all_collector_failure_total", "Per-collector failures", ["module"]) 
+logger = logging.getLogger("apps.api.run_all")
+
+
+def _safe_inc(counter, *labels):
+    """Increment a prometheus Counter if available, silently no-op on failure."""
+    try:
+        if labels:
+            counter.labels(*labels).inc()
+        else:
+            counter.inc()
+    except Exception:
+        # metrics are best-effort during tests/environments without prometheus
+        return
 
 @app.get("/healthz")
 def healthz():
@@ -644,11 +666,130 @@ def batch_run(
         db.close()
 
 
-DATA_DIR = os.getenv("DATA_DIR", "/data")
+def _require_run_all_secret(secret: str = Body(..., embed=True)):
+    """Simple opt-in protection for triggering the run_all endpoint.
+
+    Expects an environment variable RUN_ALL_SECRET to be set and match the
+    provided secret. This avoids accidental public exposure; for production use
+    a proper auth scheme should be used.
+    """
+    expected = os.getenv("RUN_ALL_SECRET")
+    if not expected:
+        raise HTTPException(status_code=403, detail="run_all is disabled on this server")
+    if secret != expected:
+        raise HTTPException(status_code=403, detail="invalid secret")
+    return True
+
+
+@app.post("/collect/run_all")
+def collect_run_all(
+    query: str = Body(None, embed=True),
+    limit: int = Body(50, embed=True),
+    whitelist: list[str] | None = Body(None, embed=True),
+    _ok: bool = Depends(require_run_all_auth),
+):
+    """Trigger the opt-in collectors aggregator and return per-collector results.
+
+    This endpoint is protected by a simple shared-secret bound to the
+    RUN_ALL_SECRET env var. It runs collectors concurrently and returns the
+    aggregated results. Be careful: collectors may perform network I/O.
+    """
+    from libs.collectors.run_all import run_all_collectors
+    _safe_inc(RUN_ALL_REQS)
+    logger.info("run_all triggered (query=%s, limit=%s, whitelist=%s)", query, limit, bool(whitelist))
+    try:
+        results = run_all_collectors(query or None, limit=limit, whitelist=whitelist)
+        return {"ok": True, "results": results}
+    except Exception as e:
+        logger.exception("run_all failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/collect/run_all/stream")
+def collect_run_all_stream(
+    query: str = Body(None, embed=True),
+    limit: int = Body(50, embed=True),
+    whitelist: list[str] | None = Body(None, embed=True),
+    collector_timeout: float = Body(10.0, embed=True),
+    collector_workers: int = Body(8, embed=True),
+    collector_retries: int = Body(1, embed=True),
+    use_processes: bool = Body(False, embed=True),
+    _ok: bool = Depends(require_run_all_auth),
+):
+    """Stream per-collector results as they complete using SSE-like JSON lines.
+
+    The response is newline-delimited JSON objects. Each yielded object is
+    {"module": <module>, "ok": bool, "records": [...] } or {"module":..., "ok":false, "error": "..."}
+    """
+    from libs.collectors.run_all import run_all_stream
+
+    # Accept optional per-module metadata overrides in body under "whitelist_meta"
+    # e.g., {"libs.collectors._tests.dummy_slow": {"collector_timeout": 0.1, "retries": 2}}
+    whitelist_meta = None
+    try:
+        whitelist_meta = _json.loads(_json.dumps(whitelist)) if isinstance(whitelist, dict) else None
+    except Exception:
+        whitelist_meta = None
+
+    def _sse_iter():
+        # start event
+        _safe_inc(RUN_ALL_REQS)
+        logger.info("run_all stream started (query=%s, limit=%s, workers=%s)", query, limit, collector_workers)
+        yield "event: start\n"
+        yield f"data: {_json.dumps({'status':'started'})}\n\n"
+
+        stream_iter = run_all_stream(
+            query or None,
+            limit=limit,
+            whitelist=whitelist if isinstance(whitelist, list) else None,
+            timeout=None,
+            max_workers=collector_workers,
+            collector_timeout=collector_timeout,
+            retries=collector_retries,
+            backoff=0.1,
+            whitelist_meta=whitelist_meta,
+            use_processes=use_processes,
+        )
+
+        for mod, info in stream_iter:
+            payload = {"module": mod, **info}
+            try:
+                data = _json.dumps(payload, ensure_ascii=False)
+            except Exception:
+                data = _json.dumps({"module": mod, "ok": False, "error": "serialization error"})
+
+            if info.get("ok"):
+                _safe_inc(RUN_ALL_COLLECTOR_SUCCESS, mod)
+                logger.info("collector result: %s (records=%s)", mod, len(info.get("records", [])) if info.get("records") else 0)
+                yield "event: collector_result\n"
+                yield f"data: {data}\n\n"
+            else:
+                _safe_inc(RUN_ALL_COLLECTOR_FAILURE, mod)
+                logger.warning("collector error: %s -> %s", mod, info.get("error"))
+                yield "event: collector_error\n"
+                yield f"data: {data}\n\n"
+
+        # end event
+        yield "event: end\n"
+        yield f"data: {_json.dumps({'status':'finished'})}\n\n"
+
+    return StreamingResponse(_sse_iter(), media_type="text/event-stream; charset=utf-8")
+
+
+DEFAULT_LOCAL_DATA = os.path.join(os.path.dirname(__file__), "..", ".data")
+DEFAULT_LOCAL_DATA = os.path.abspath(DEFAULT_LOCAL_DATA)
+DATA_DIR = os.getenv("DATA_DIR", DEFAULT_LOCAL_DATA)
 FAISS_DIR = os.path.join(DATA_DIR, "faiss")
 os.makedirs(FAISS_DIR, exist_ok=True)
 INDEX_PATH = os.path.join(FAISS_DIR, "images.index")
 META_PATH = os.path.join(FAISS_DIR, "images_meta.json")
+
+# Initialize SQLite tables when running with the test-time DB fallback so
+# the in-memory DB has the expected schema during unit tests.
+try:
+    init_db()
+except Exception:
+    pass
 
 def _load_index():
     if os.path.exists(INDEX_PATH):

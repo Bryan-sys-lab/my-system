@@ -1,14 +1,16 @@
-from typing import Tuple, List
-import faiss
+from typing import Tuple
 import numpy as np
 
-def build_index(vectors: np.ndarray) -> faiss.IndexFlatIP:
-    # vectors must be L2-normalized for IP to behave like cosine similarity
-    d = vectors.shape[1]
-    index = faiss.IndexFlatIP(d)
-    index.add(vectors.astype('float32'))
-    return index
+from .faiss_adapter import build_index as _build_index, search as _search
 
-def search(index: faiss.IndexFlatIP, queries: np.ndarray, k: int = 10) -> Tuple[np.ndarray, np.ndarray]:
-    D, I = index.search(queries.astype('float32'), k)
-    return D, I
+
+def build_index(vectors: np.ndarray):
+    """Build a FAISS-compatible index (or the fallback) for `vectors`.
+
+    Returns an index object suitable for passing to `search()`.
+    """
+    return _build_index(vectors)
+
+
+def search(index, queries: np.ndarray, k: int = 10) -> Tuple[np.ndarray, np.ndarray]:
+    return _search(index, queries, k=k)

@@ -11,6 +11,8 @@ def ensure_model(name: str = "en_core_web_sm"):
         return spacy.load(name)
 
 def extract_entities(text: str) -> List[Dict]:
+    if not text:
+        return []
     nlp = ensure_model()
     doc = nlp(text)
     return [{"text": ent.text, "label": ent.label_} for ent in doc.ents]

@@ -11,7 +11,7 @@ python cli/bsearch.py --collect PACKAGE.MODULE:FUNC --query "your search" --limi
 - The collectors entrypoint must yield dict records with keys like:
   - `id`, `entity_type`, `text`, `ip`, `image_path`/`image_bytes`, `video_path`, `wifi`, `cell`, `lat`, `lon`, `xmp_text`
 
-- Location enrichment runs **alongside** your other enrichment. It will add:
+- Location enrichment runs **alongside** the other enrichment. It will add:
   ```json
   "location": {
     "lat": 1.23, "lon": 4.56, "radius_m": 120, "method": "fused", "signals": [ ... ]
@@ -39,7 +39,7 @@ Fill:
 
 ## Wiring collectors
 
-Your collectors function (referenced by `--collect`) should yield records. Example signature:
+the collectors function (referenced by `--collect`) should yield records. Example signature:
 ```python
 def run_search(query: str, limit: int = 50):
     for item in fetch_items(query, limit):

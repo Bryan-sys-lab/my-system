@@ -60,3 +60,15 @@ class GoogleGeolocationResolver:
         except Exception:
             return None
         return None
+
+class MLSResolver:
+    """Stub MLS resolver for environments without external MLS packages.
+
+    This resolver intentionally returns None for lookups. Production code can
+    replace or extend this with a full implementation.
+    """
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def resolve(self, *args, **kwargs):
+        return None

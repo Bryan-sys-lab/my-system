@@ -6,5 +6,5 @@ def tor_session():
     s = requests.Session()
     s.proxies = {"http": proxy, "https": proxy}
     s.headers.update({"User-Agent": "b-search/1.0 (tor)"})
-    # Small sanity check (not mandatory): s.get("http://httpbin.org/ip")
+    # Small sanity check : s.get("http://httpbin.org/ip")
     return s

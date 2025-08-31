@@ -1,6 +1,6 @@
 
 import time, os
-from watchers import run_due_watchers
+from apps.workers.watchers import run_due_watchers
 
 INTERVAL = int(os.getenv("WATCHER_TICK_SECONDS","60"))
 

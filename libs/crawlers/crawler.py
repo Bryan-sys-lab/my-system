@@ -29,6 +29,9 @@ def extract_links(base_url: str, html: str):
 
 def polite_crawl(seeds, allow_domains=None, deny_patterns=None, max_pages=100, per_domain_delay=1.0, session=None):
     allow_domains = set(allow_domains or [])
+    # Validate inputs for defensive behavior (tests expect exceptions on bad args)
+    if max_pages is None or not isinstance(max_pages, int) or max_pages < 0:
+        raise Exception("max_pages must be a non-negative integer")
     deny_patterns = [re.compile(p) for p in (deny_patterns or [])]
     visited = set()
     queue = deque(seeds)

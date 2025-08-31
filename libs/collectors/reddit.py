@@ -1,6 +1,9 @@
 import requests
 
 def fetch_subreddit_json(subreddit: str, limit: int = 50, t: str = "day"):
+    # Respect zero-or-negative limits as 'no results' for robustness in tests.
+    if limit <= 0:
+        return []
     headers = {"User-Agent": "b-search/1.0 (https://example.local)"}
     url = f"https://www.reddit.com/r/{subreddit}/top.json?t={t}&limit={limit}"
     r = requests.get(url, headers=headers, timeout=20)
