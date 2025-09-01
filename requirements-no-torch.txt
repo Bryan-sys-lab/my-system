@@ -1,7 +1,6 @@
 
 Pillow==10.4.0
 PyYAML==6.0.1
-clip-anytorch==2.6.0
 exifread==3.0.0
 faiss-cpu==1.11.0.post1
 ffmpeg-python==0.2.0
@@ -11,5 +10,3 @@ piexif==1.1.3
 psycopg2-binary==2.9.10
 redis==5.0.8
 requests==2.32.3
-torch==2.8.0
-torchvision==0.23.0

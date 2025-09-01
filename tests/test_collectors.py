@@ -36,11 +36,27 @@ def test_wayback_latest_snapshot_extremes():
 
 def test_web_simple_fetch_url_extremes():
     # Edge: invalid URL
-    with pytest.raises(Exception):
-        web_simple.fetch_url('not_a_url')
+    result = web_simple.fetch_url('not_a_url')
+    assert 'error' in result and result['error']
     # Edge: unreachable URL
-    with pytest.raises(Exception):
-        web_simple.fetch_url('http://localhost:9999')
+    result = web_simple.fetch_url('http://localhost:9999')
+    assert 'error' in result and result['error']
+
+def test_web_simple_fetch_url_features():
+    # Use a simple, reliable page
+    url = 'https://example.com/'
+    result = web_simple.fetch_url(url)
+    assert 'title' in result and 'Example Domain' in result['title']
+    assert 'text' in result and 'Example Domain' in result['text']
+    # Test link extraction
+    result_links = web_simple.fetch_url(url, extract_links=True)
+    assert 'links' in result_links and any('example.com' in l for l in result_links['links'])
+    # Test raw HTML return
+    result_html = web_simple.fetch_url(url, return_html=True)
+    assert 'html' in result_html and '<html' in result_html['html'].lower()
+    # Test custom tag extraction (should still find text)
+    result_tags = web_simple.fetch_url(url, extract_tags=['h1'])
+    assert 'Example Domain' in result_tags['text']
 
 def test_youtube_rss_channel_extremes():
     # Edge: invalid channel

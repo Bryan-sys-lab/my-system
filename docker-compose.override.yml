@@ -35,11 +35,6 @@ services:
       DATA_DIR: /data
     ports:
       - "10000:10000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   worker:
     build:

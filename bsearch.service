@@ -1,0 +1,38 @@
+[Unit]
+Description=B-Search Intelligence Platform
+After=network.target docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=bsearch
+Group=bsearch
+WorkingDirectory=/opt/bsearch/server
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=-/opt/bsearch/server/.env
+ExecStart=/opt/bsearch/server/startup-prod.sh
+ExecStop=/usr/bin/docker compose down
+RemainAfterExit=yes
+TimeoutStartSec=600
+TimeoutStopSec=300
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/opt/bsearch /var/log/bsearch /var/run/bsearch
+ProtectHome=yes
+PrivateDevices=yes
+
+# Resource limits
+MemoryLimit=8G
+CPUQuota=200%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bsearch-startup
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 
 import os, uuid, time, hashlib, json, datetime as dt
-from typing import Dict, List
+from typing import Dict, List, Any
 from libs.storage.models import SessionLocal, Watcher, WatcherHit, Item
 from libs.common.alerts import send_webhook, send_whatsapp
 from libs.enrichment.hash_index import sha256_file, phash_file
@@ -18,7 +18,7 @@ DATA_DIR = os.getenv("DATA_DIR", "/data")
 def _fingerprint(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8", "ignore")).hexdigest()
 
-def _alert(pack: dict):
+def _alert(pack: Dict[str, Any]) -> None:
     # send WhatsApp + webhook if configured
     body = pack.get("summary") or json.dumps(pack)[:1500]
     send_whatsapp(body)
@@ -26,12 +26,12 @@ def _alert(pack: dict):
     if webhook:
         send_webhook(webhook, pack)
 
-def _save_hit(db, watcher_id, fp, meta):
+def _save_hit(db: Any, watcher_id: Any, fp: str, meta: Dict[str, Any]) -> WatcherHit:
     hit = WatcherHit(id=uuid.uuid4(), watcher_id=watcher_id, fingerprint=fp, meta=meta)
     db.add(hit)
     return hit
 
-def _seen(db, watcher_id, fp) -> bool:
+def _seen(db: Any, watcher_id: Any, fp: str) -> bool:
     return db.query(WatcherHit).filter(WatcherHit.watcher_id==watcher_id, WatcherHit.fingerprint==fp).first() is not None
 
 def run_keyword(w: Watcher) -> int:
@@ -131,7 +131,7 @@ def run_image(w: Watcher) -> int:
 
 def run_due_watchers():
     db = SessionLocal()
-    now = dt.datetime.utcnow()
+    now = dt.datetime.now(dt.timezone.utc)
     due = db.query(Watcher).filter(Watcher.enabled==True).all()
     ran = 0; total_new = 0
     for w in due:

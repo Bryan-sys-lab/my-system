@@ -3,10 +3,19 @@ from sqlalchemy import Column, String, Text, JSON, TIMESTAMP, ForeignKey, text
 from sqlalchemy import Integer, Boolean, DateTime, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+from libs.storage.db import engine
 try:
-    from sqlalchemy.dialects.postgresql import JSONB
+    # If the Postgres dialect is available use JSONB, but when the
+    # configured engine is not Postgres (e.g., SQLite fallback) prefer
+    # the generic JSON type so table creation works.
+    from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
+    try:
+        is_postgres = engine.url.get_backend_name() == 'postgresql'
+    except Exception:
+        is_postgres = False
+    JSONB = PG_JSONB if is_postgres else JSON
 except Exception:
-    # Fallback for sqlite test environments
+    # Fallback for environments without the Postgres dialect
     JSONB = JSON
 from libs.storage.db import Base, SessionLocal
 

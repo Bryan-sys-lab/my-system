@@ -46,3 +46,25 @@ def init_db(force: bool = False):
 		Base.metadata.create_all(engine)
 		return True
 	return False
+
+
+# If we're running with the SQLite in-memory fallback, create tables now so
+# tests and imported modules that access the DB before the FastAPI startup
+# handler still find the expected tables.
+try:
+	if engine.url.get_backend_name() == 'sqlite':
+		# Import models so they register with `Base` before we call
+		# `Base.metadata.create_all()`. Without importing the model
+		# modules first the table metadata won't be present and create_all
+		# will be a no-op which leads to 'no such table' errors in tests.
+		try:
+			# Importing this module registers all model classes on Base
+			import libs.storage.models  # noqa: F401
+		except Exception:
+			# If importing models fails, proceed to init_db() anyway; the
+			# underlying error will surface elsewhere in tests.
+			pass
+		init_db()
+except Exception:
+	# Best-effort during import; errors will be surfaced later if DB isn't usable
+	pass

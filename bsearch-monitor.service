@@ -1,0 +1,41 @@
+[Unit]
+Description=B-Search Production Monitor
+After=network.target bsearch.service
+Wants=bsearch.service
+PartOf=bsearch.service
+
+[Service]
+Type=simple
+User=bsearch
+Group=bsearch
+WorkingDirectory=/opt/bsearch/server
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EnvironmentFile=-/opt/bsearch/server/.env
+ExecStart=/opt/bsearch/server/monitor-prod.sh
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/log/bsearch /var/run/bsearch
+ProtectHome=yes
+PrivateDevices=yes
+
+# Resource limits
+MemoryLimit=1G
+CPUQuota=50%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bsearch-monitor
+
+# Monitoring
+WatchdogSec=300
+NotifyAccess=main
+
+[Install]
+WantedBy=multi-user.target
