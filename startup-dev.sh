@@ -163,29 +163,8 @@ check_dependencies() {
 
     local missing_deps=()
 
-    # Check Docker
-    if ! command -v docker >/dev/null 2>&1; then
-        missing_deps+=("docker")
-    else
-        local docker_version=$(docker --version | cut -d' ' -f3 | cut -d',' -f1)
-        log_info "Docker version: $docker_version"
-
-        if ! docker info >/dev/null 2>&1; then
-            log_error "Docker daemon is not running"
-            return 1
-        fi
-    fi
-
-    # Check Docker Compose
-    if command -v docker-compose >/dev/null 2>&1; then
-        local compose_version=$(docker-compose --version | cut -d' ' -f3)
-        log_info "Docker Compose version: $compose_version"
-    elif docker compose version >/dev/null 2>&1; then
-        local compose_version=$(docker compose version | cut -d' ' -f4)
-        log_info "Docker Compose (plugin) version: $compose_version"
-    else
-        missing_deps+=("docker-compose")
-    fi
+    # Docker not required for lightweight development
+    log_dev "Docker not required for lightweight development mode"
 
     # Check Python
     if ! command -v python3 >/dev/null 2>&1; then
@@ -229,8 +208,8 @@ validate_configuration() {
         create_dev_env
     fi
 
-    # Validate required environment variables (relaxed for dev)
-    local required_vars=("POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_DB")
+    # Validate required environment variables (SQLite mode - minimal requirements)
+    local required_vars=("SECRET_KEY" "RUN_ALL_SECRET")
     local missing_vars=()
 
     for var in "${required_vars[@]}"; do
@@ -262,23 +241,12 @@ create_dev_env() {
     log_dev "Creating development environment configuration..."
 
     cat > .env << 'EOF'
-# Development Database Configuration
-POSTGRES_USER=dev_user
-POSTGRES_PASSWORD=dev_password
-POSTGRES_HOST=postgres
-POSTGRES_PORT=5432
-POSTGRES_DB=bsearch_dev_db
+# Development Database Configuration (SQLite for lightweight mode)
+DATABASE_URL=sqlite:///./bsearch_dev.db
 
-# Development Redis Configuration
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=
-
-# Development MinIO Configuration
-MINIO_ENDPOINT=minio:9000
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin
-MINIO_BUCKET=bsearch-dev-bucket
+# Development Application Security
+SECRET_KEY=dev_secret_key_change_in_production_12345678901234567890
+RUN_ALL_SECRET=dev_run_all_secret_1234567890
 
 # Development Application Security
 SECRET_KEY=dev_secret_key_change_in_production_12345678901234567890
@@ -363,107 +331,34 @@ check_network_connectivity() {
     return 0
 }
 
-start_infrastructure_services() {
-    log_header "🏗️ STARTING INFRASTRUCTURE SERVICES (DEVELOPMENT MODE)"
+setup_development_directories() {
+    log_header "📁 SETTING UP DEVELOPMENT DIRECTORIES"
 
-    # Create required directories
-    mkdir -p logs dev-data/minio dev-data/postgres dev-data/redis
+    # Create required directories for lightweight development
+    mkdir -p logs dev-data
 
-    # Start core services with development-friendly settings
-    log_info "Starting PostgreSQL, Redis, and MinIO (development mode)..."
-
-    if command -v docker-compose >/dev/null 2>&1; then
-        docker-compose up -d postgres redis minio
-    else
-        docker compose up -d postgres redis minio
+    # Create SQLite database file if it doesn't exist
+    if [ ! -f "dev-data/bsearch-dev.db" ]; then
+        log_dev "Creating SQLite database file..."
+        touch dev-data/bsearch-dev.db
     fi
 
-    # Wait for services to be healthy (shorter timeout for dev)
-    log_info "Waiting for services to become healthy..."
-    local start_time=$(date +%s)
-
-    while true; do
-        local current_time=$(date +%s)
-        local elapsed=$((current_time - start_time))
-
-        if [ $elapsed -gt $SERVICE_STARTUP_TIMEOUT ]; then
-            log_error "Services failed to start within ${SERVICE_STARTUP_TIMEOUT}s timeout"
-            return 1
-        fi
-
-        # Check PostgreSQL
-        if docker exec $(docker ps -q -f name=postgres 2>/dev/null) pg_isready -U ${POSTGRES_USER:-dev_user} -d ${POSTGRES_DB:-bsearch_dev_db} >/dev/null 2>&1; then
-            log_success "PostgreSQL is ready"
-            postgres_ready=true
-        else
-            postgres_ready=false
-        fi
-
-        # Check Redis
-        if docker exec $(docker ps -q -f name=redis 2>/dev/null) redis-cli ping 2>/dev/null | grep -q "PONG"; then
-            log_success "Redis is ready"
-            redis_ready=true
-        else
-            redis_ready=false
-        fi
-
-        # Check MinIO
-        if timeout 3 curl -s http://localhost:9000/minio/health/ready >/dev/null 2>&1; then
-            log_success "MinIO is ready"
-            minio_ready=true
-        else
-            minio_ready=false
-        fi
-
-        if [ "$postgres_ready" = true ] && [ "$redis_ready" = true ] && [ "$minio_ready" = true ]; then
-            break
-        fi
-
-        sleep 2
-    done
-
-    # Start optional development services
-    if grep -q "^ENABLE_MONITORING=True" .env 2>/dev/null; then
-        log_dev "Starting monitoring services..."
-        if command -v docker-compose >/dev/null 2>&1; then
-            docker-compose up -d prometheus grafana
-        else
-            docker compose up -d prometheus grafana
-        fi
-    fi
-
-    log_success "Infrastructure services started successfully"
+    log_success "Development directories setup complete"
     return 0
 }
 
-run_database_migrations() {
-    log_header "🗄️ DATABASE MIGRATIONS (DEVELOPMENT MODE)"
+setup_database() {
+    log_header "🗄️ DATABASE SETUP (LIGHTWEIGHT MODE)"
 
-    # Wait for database to be ready
-    log_info "Waiting for database to be ready..."
-    local retries=15
-    while [ $retries -gt 0 ]; do
-        if docker exec $(docker ps -q -f name=postgres 2>/dev/null) pg_isready -U ${POSTGRES_USER:-dev_user} -d ${POSTGRES_DB:-bsearch_dev_db} >/dev/null 2>&1; then
-            break
-        fi
-        retries=$((retries - 1))
-        sleep 1
-    done
-
-    if [ $retries -eq 0 ]; then
-        log_error "Database failed to become ready"
-        return 1
-    fi
-
-    # Run migrations if migration script exists
-    if [ -f "infra/migrations/init.sql" ]; then
-        log_info "Running database initialization..."
-        docker exec -i $(docker ps -q -f name=postgres) psql -U ${POSTGRES_USER:-dev_user} -d ${POSTGRES_DB:-bsearch_dev_db} < infra/migrations/init.sql
-        log_success "Database initialized successfully"
+    # For SQLite, just ensure the database file exists
+    if [ -f "dev-data/bsearch-dev.db" ]; then
+        log_dev "SQLite database file exists"
     else
-        log_dev "No database migration script found - using auto-migration"
+        log_dev "Creating SQLite database file..."
+        touch dev-data/bsearch-dev.db
     fi
 
+    log_success "Database setup complete (SQLite)"
     return 0
 }
 
@@ -531,50 +426,57 @@ else:
     return 0
 }
 
-start_application_services() {
-    log_header "🚀 STARTING APPLICATION SERVICES (DEVELOPMENT MODE)"
+start_application_server() {
+    log_header "🚀 STARTING APPLICATION SERVER (LIGHTWEIGHT MODE)"
 
-    # Start Celery workers (lighter for dev)
-    log_info "Starting Celery workers (development mode)..."
-    if command -v docker-compose >/dev/null 2>&1; then
-        docker-compose up -d workers
+    # Activate virtual environment
+    source .venv/bin/activate
+
+    # Set environment variables for development
+    export SKIP_HEAVY_DEPS=1
+    export DEBUG=True
+
+    # Load .env file if it exists
+    if [ -f ".env" ]; then
+        set -a
+        source .env
+        set +a
+    fi
+
+    # Start FastAPI server with hot reload
+    log_info "Starting FastAPI server on http://localhost:8000..."
+    nohup python -m uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 --reload > ../logs/server.log 2>&1 &
+    SERVER_PID=$!
+
+    # Wait a moment for server to start
+    sleep 3
+
+    # Check if server started successfully
+    if kill -0 $SERVER_PID 2>/dev/null; then
+        log_success "FastAPI server started successfully (PID: $SERVER_PID)"
+        log_success "Server running at: http://localhost:8000"
+        log_success "API docs at: http://localhost:8000/docs"
     else
-        docker compose up -d workers
+        log_error "Failed to start FastAPI server"
+        cat ../logs/server.log
+        return 1
     fi
 
-    # Start API service with development settings
-    log_info "Starting API service (development mode)..."
-    if command -v docker-compose >/dev/null 2>&1; then
-        docker-compose up -d api
-    else
-        docker compose up -d api
-    fi
-
-    # Start Label Studio if configured and requested
-    if grep -q "^ENABLE_LABEL_STUDIO=True" .env 2>/dev/null; then
-        log_dev "Starting Label Studio..."
-        if command -v docker-compose >/dev/null 2>&1; then
-            docker-compose up -d label-studio
-        else
-            docker compose up -d label-studio
-        fi
-    fi
-
-    log_success "Application services started"
+    log_success "Application server started"
     return 0
 }
 
 perform_health_checks() {
-    log_header "🏥 HEALTH CHECKS (DEVELOPMENT MODE)"
+    log_header "🏥 HEALTH CHECKS (LIGHTWEIGHT MODE)"
 
     local health_check_start=$(date +%s)
     local all_healthy=true
 
-    # API Health Check (with dev timeout)
+    # API Health Check
     log_info "Checking API health..."
     local api_retries=5
     while [ $api_retries -gt 0 ]; do
-        if timeout 5 curl -s --max-time 3 http://localhost:8080/healthz | jq -e '.status == "healthy"' >/dev/null 2>&1; then
+        if timeout 5 curl -s --max-time 3 http://localhost:8000/healthz >/dev/null 2>&1; then
             log_success "API health check passed"
             break
         fi
@@ -587,38 +489,20 @@ perform_health_checks() {
         all_healthy=false
     fi
 
-    # Database connectivity check
+    # Database connectivity check (SQLite)
     log_info "Checking database connectivity..."
-    if docker exec $(docker ps -q -f name=postgres 2>/dev/null) pg_isready -U ${POSTGRES_USER:-dev_user} -d ${POSTGRES_DB:-bsearch_dev_db} >/dev/null 2>&1; then
-        log_success "Database connectivity check passed"
+    if [ -f "dev-data/bsearch-dev.db" ]; then
+        log_success "SQLite database file exists"
     else
-        log_error "Database connectivity check failed"
+        log_error "SQLite database file not found"
         all_healthy=false
     fi
 
-    # Redis connectivity check
-    log_info "Checking Redis connectivity..."
-    if docker exec $(docker ps -q -f name=redis 2>/dev/null) redis-cli ping 2>/dev/null | grep -q "PONG"; then
-        log_success "Redis connectivity check passed"
-    else
-        log_error "Redis connectivity check failed"
-        all_healthy=false
-    fi
-
-    # MinIO connectivity check
-    log_info "Checking MinIO connectivity..."
-    if timeout 3 curl -s http://localhost:9000/minio/health/ready >/dev/null 2>&1; then
-        log_success "MinIO connectivity check passed"
-    else
-        log_warn "MinIO connectivity check failed - this is normal if MinIO is still starting"
-        all_healthy=false
-    fi
-
-    # API endpoints check (lighter for dev)
+    # API endpoints check
     log_info "Checking critical API endpoints..."
     local endpoints=(
-        "http://localhost:8080/healthz"
-        "http://localhost:8080/docs"
+        "http://localhost:8000/healthz"
+        "http://localhost:8000/docs"
     )
 
     for endpoint in "${endpoints[@]}"; do
@@ -633,7 +517,7 @@ perform_health_checks() {
     if [ "$all_healthy" = true ]; then
         log_info "Running performance baseline check..."
         local perf_start=$(date +%s)
-        timeout 3 curl -s http://localhost:8080/healthz >/dev/null
+        timeout 3 curl -s http://localhost:8000/healthz >/dev/null
         local perf_end=$(date +%s)
         local response_time=$((perf_end - perf_start))
 
@@ -652,7 +536,7 @@ perform_health_checks() {
         return 0
     else
         log_warn "Some health checks failed (${total_health_time}s) - this is normal during development"
-        log_dev "Services may still be starting up. Check status with: docker compose ps"
+        log_dev "Server may still be starting up"
         return 0  # Don't fail in dev mode
     fi
 }
@@ -693,24 +577,18 @@ display_development_info() {
     echo -e "${GREEN}✅ Development startup completed in ${total_time}s${NC}"
     echo ""
 
-    echo -e "${CYAN}🚀 Development Services:${NC}"
-    echo -e "  🌐 API Gateway:     http://localhost:8080"
-    echo -e "  📚 API Docs:        http://localhost:8080/docs"
-    echo -e "  🔄 API ReDoc:       http://localhost:8080/redoc"
-    echo -e "  📊 Prometheus:      http://localhost:9090 (if enabled)"
-    echo -e "  📈 Grafana:         http://localhost:3000 (if enabled)"
-    echo -e "  🗄️  PostgreSQL:      localhost:5432"
-    echo -e "  🔄 Redis:           localhost:6379"
-    echo -e "  📦 MinIO:           http://localhost:9000"
-    echo -e "  🏷️  Label Studio:    http://localhost:8081 (if enabled)"
+    echo -e "${CYAN}🚀 Development Services (Lightweight Mode):${NC}"
+    echo -e "  🌐 FastAPI Server:  http://localhost:8000"
+    echo -e "  📚 API Docs:        http://localhost:8000/docs"
+    echo -e "  🔄 API ReDoc:       http://localhost:8000/redoc"
+    echo -e "  🗄️  SQLite Database: ./dev-data/bsearch-dev.db"
 
     echo ""
     echo -e "${CYAN}🛠️ Development Commands:${NC}"
-    echo -e "  View logs:          docker compose logs -f"
-    echo -e "  Stop services:      docker compose down"
-    echo -e "  Restart API:        docker compose restart api"
-    echo -e "  Check status:       docker compose ps"
-    echo -e "  Health check:       curl http://localhost:8080/healthz"
+    echo -e "  View logs:          tail -f ../logs/server.log"
+    echo -e "  Stop server:        pkill -f uvicorn"
+    echo -e "  Restart server:     kill $SERVER_PID && ./startup-dev.sh"
+    echo -e "  Health check:       curl http://localhost:8000/healthz"
 
     echo ""
     echo -e "${CYAN}🐛 Development Features:${NC}"
@@ -722,10 +600,10 @@ display_development_info() {
 
     echo ""
     echo -e "${CYAN}📝 Development Tips:${NC}"
-    echo -e "  • Use 'docker compose logs -f api' to watch API logs"
+    echo -e "  • Use 'tail -f ../logs/server.log' to watch server logs"
     echo -e "  • API will auto-reload when you modify Python files"
     echo -e "  • Check $LOG_FILE for detailed startup logs"
-    echo -e "  • Use 'make test' to run tests (if available)"
+    echo -e "  • Use './run-tests.sh' to run tests"
     echo -e "  • Visit /docs for interactive API documentation"
 
     echo ""
@@ -737,7 +615,6 @@ display_development_info() {
     echo -e "  • Use production startup script for production deployment"
 
     echo ""
-    echo -e "${BLUE}🎯 Happy coding with B-Search!${NC}"
 }
 
 # Main execution
@@ -759,17 +636,15 @@ main() {
     check_network_connectivity || true  # Don't fail on network issues in dev
     validate_configuration || exit 1
 
-    # Start infrastructure
-    start_infrastructure_services || {
-        log_error "Failed to start infrastructure services"
-        log_dev "Try: docker compose down && docker compose up -d"
+    # Setup development directories
+    setup_development_directories || {
+        log_error "Failed to setup development directories"
         exit 1
     }
 
     # Database setup
-    run_database_migrations || {
-        log_error "Failed to run database migrations"
-        log_dev "Check database logs: docker compose logs postgres"
+    setup_database || {
+        log_error "Failed to setup database"
         exit 1
     }
 
@@ -780,10 +655,10 @@ main() {
         exit 1
     }
 
-    # Start application services
-    start_application_services || {
-        log_error "Failed to start application services"
-        log_dev "Check service logs: docker compose logs"
+    # Start application server
+    start_application_server || {
+        log_error "Failed to start application server"
+        log_dev "Check server logs: tail -f ../logs/server.log"
         exit 1
     }
 
@@ -813,10 +688,8 @@ case "${1:-}" in
         echo "Options:"
         echo "  --help, -h              Show this help message"
         echo "  --version, -v           Show version information"
-        echo "  --clean                 Clean development environment and restart"
-        echo "  --rebuild               Rebuild all containers from scratch"
-        echo "  --logs                  Show recent logs after startup"
-        echo "  --test                  Run basic functionality tests"
+        echo "  --clean                 Clean development environment"
+        echo "  --logs                  Show server logs after startup"
         echo ""
         echo "Environment Variables:"
         echo "  LOG_FILE                Custom log file path (default: auto-generated)"
@@ -831,23 +704,12 @@ case "${1:-}" in
         ;;
     --clean)
         log_info "Cleaning development environment..."
-        docker compose down -v --remove-orphans
         rm -rf .venv logs dev-data .env
         log_success "Development environment cleaned"
         exit 0
         ;;
-    --rebuild)
-        log_info "Rebuilding all containers..."
-        docker compose down
-        docker compose build --no-cache
-        log_success "Containers rebuilt"
-        exit 0
-        ;;
     --logs)
-        main "$@" && docker compose logs -f --tail=50
-        ;;
-    --test)
-        main "$@" && run_development_tests
+        main "$@" && tail -f ../logs/server.log
         ;;
     *)
         main "$@"

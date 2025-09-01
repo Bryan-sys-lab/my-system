@@ -678,7 +678,7 @@ display_startup_summary() {
     echo -e "  • Review security settings"
 
     echo ""
-    echo -e "${BLUE}🚀 B-Search is ready for production use!${NC}"
+    echo -e "${BLUE}🚀 B-Search is ready!${NC}"
 }
 
 rollback_on_failure() {
